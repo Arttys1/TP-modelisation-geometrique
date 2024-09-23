@@ -102,7 +102,7 @@ void initOpenGl()
 
 //------------------------------------------------------
 
-
+//////////////////////
 GLfloat cox_de_boor(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_vector)  {
   GLfloat tj = nodal_vector[j];
   GLfloat tj1 = nodal_vector[j+1];
@@ -175,6 +175,8 @@ Points computeDeriveNurbs(float t) {
   return a + (b * -1); // a- b
 }
 
+////////////////////////
+
 Points normalize(Points a) {
   float inverseDistance = 1 / sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
   return a * inverseDistance;
@@ -221,18 +223,46 @@ void traceFrenet(float t) {
   glEnd(); 
 }
 
+//function to draw a circle, find here : https://stackoverflow.com/questions/22444450/drawing-circle-with-opengl
+void DrawCircle(float cx, float cy, float r)
+{
+    const int num_segments = 64;
+    glBegin(GL_LINE_LOOP);
+    for(int ii = 0; ii < num_segments; ii++)
+    {
+        float theta = 2.0f * 3.1415926f * float(ii) / float(num_segments);//get the current angle
+
+        float z = r * cosf(theta);//calculate the z component
+        float y = r * sinf(theta);//calculate the y component
+
+        glVertex3f(cx, y + cy, z);//output vertex
+
+    }
+    glEnd();
+}
+
 void displayCourbe(void)
 {
+  //display curve
   glBegin(GL_LINE_STRIP);
-  for(float t = 0; t < 1; t += 0.01){
+  for(float i = 0; i < 1; i += 0.01){
       glColor3f(1.0f, 1.0f, 0.0f);
       Points pen;
-      pen = computeNurbs(t);
+      pen = computeNurbs(i);
       glVertex2f(pen.x, pen.y);
   }       
   glEnd();
 
-  traceFrenet(0.5f);
+  //display curve
+  for(float i = 0; i < 1; i += 0.001){
+      glColor3f(0.0f, i, 1.0f);
+      Points pen;
+      pen = computeNurbs(i);
+      DrawCircle(pen.x, pen.y, 0.1f);
+  }
+
+  //display frenet
+  traceFrenet(t);
 }
 
 int main(int argc,char **argv)
