@@ -1,8 +1,10 @@
 #include <iostream>
 #include <stdlib.h>
 #include <GL/glut.h>
+#include <GL/glut.h>
 #include <vector>
 #include <assert.h>
+#include <math.h>
 #include <sstream>
 
 
@@ -26,7 +28,7 @@ bool mouseMiddleDown;
 float mouseX, mouseY;
 float cameraAngleX;
 float cameraAngleY;
-float cameraDistance=0.;
+float cameraDistance=-3.;
 
 // constantes pour les materieux
 float no_mat[] = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -43,17 +45,31 @@ struct Points
 {
     float x;
     float y;
+    float z;
 
     Points operator*(float f) const
     {
-        return Points {.x = x * f, .y = y * f};
+        return Points {.x = x * f, .y = y * f, .z = z * f};
     }
     Points operator+(Points p1) const
     {
-        return Points {.x = p1.x + x, .y = p1.y + y};
+        return Points {.x = p1.x + x, .y = p1.y + y, .z = p1.z + z};
     }
 };
 
+const int d = 3;
+const int n = 7;
+const int v_size = n + d + 1;
+const std::vector<GLfloat> nodal_vector { 0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1};
+const std::vector<Points> points {
+  {.x = 0, .y=1, .z = 0},
+  {.x = 1, .y=1, .z = 0},
+  {.x = 1, .y=2, .z = 0},
+  {.x = 2, .y=2, .z = 0},
+  {.x = 2.5, .y=1, .z = 0},
+  {.x = 1.7, .y=0, .z = 0},
+  {.x = 1, .y=0.7, .z = 0},
+};
 
 void initOpenGl() 
 { 
@@ -105,22 +121,8 @@ GLfloat cox_de_boor(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_
    + Nd1j1 * cox_de_boor(t, d-1, j + 1, nodal_vector);
 }
 
-Points computeNurbs(float t) {
-  const int d = 3;
-  const int n = 7;
-  const int v_size = n + d + 1;
-  std::vector<GLfloat> nodal_vector { 0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1};
+Points computeNurbs(float t) {  
   assert(nodal_vector.size() == v_size);
-  
-  std::vector<Points> points {
-    {.x = 0, .y=1},
-    {.x = 1, .y=1},
-    {.x = 1, .y=2},
-    {.x = 2, .y=2},
-    {.x = 2.5, .y=1},
-    {.x = 1.7, .y=0},
-    {.x = 1, .y=0.7},
-  };
 
   Points sommePointCox = {0, 0};
   GLfloat sommeCox = 0.f;
@@ -135,16 +137,102 @@ Points computeNurbs(float t) {
   return pointNurbs;
 }
 
+GLfloat derive_cox(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_vector) {
+  GLfloat tj = nodal_vector[j];
+  GLfloat tj1 = nodal_vector[j+1];
+  GLfloat tjd = nodal_vector[j+d];
+  GLfloat tjd1 = nodal_vector[j+d+1];
+
+  GLfloat f1 = (tjd - tj) == 0 ? 0 : n/(tjd - tj);
+  GLfloat f2 = (tjd1 - tj1) == 0 ? 0 : n/(tjd1 - tj1);
+
+  return f1 * cox_de_boor(t, d - 1, j, nodal_vector) 
+       - f2 * cox_de_boor(t, d - 1, j + 1, nodal_vector);
+}
+
+Points computeDeriveNurbs(float t) {
+  assert(nodal_vector.size() == v_size);
+
+  Points sommePointCox = {0, 0};
+  Points sommePointCoxDerive = {0, 0};
+  GLfloat sommeCox = 0.f;
+  GLfloat sommeCoxDerive = 0.f;
+
+  for(int i = 0; i < n ; i++) {
+    GLfloat Njd = cox_de_boor(t, d, i, nodal_vector);
+    GLfloat deriveNjd = derive_cox(t, d, i, nodal_vector);
+    sommePointCox = sommePointCox + (points[i] * Njd);
+    sommePointCoxDerive = sommePointCoxDerive + (points[i] * deriveNjd);
+    sommeCox += Njd;
+    sommeCox += deriveNjd;
+  }
+
+  GLfloat inverseSommeDiviseurCarre = 1.f / (sommeCox * sommeCox);
+
+  Points a = (sommePointCoxDerive * sommeCox) * inverseSommeDiviseurCarre;
+  Points b = (sommePointCox * sommeCoxDerive) * inverseSommeDiviseurCarre;
+
+  return a + (b * -1); // a- b
+}
+
+Points normalize(Points a) {
+  float inverseDistance = 1 / sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+  return a * inverseDistance;
+}
+
+Points crossProduct(Points a, Points b) {
+  return Points {
+    .x = a.y * b.z - a.z * b.y,
+    .y = a.z * b.x - a.x * b.z,
+    .z = a.x * b.y - a.y * b.x,
+  };
+}
+
+void traceFrenet(float t) {
+  Points k = Points {0.0,0.0,1.0};
+  Points p = computeNurbs(t);
+  Points tangente = computeDeriveNurbs(t);
+  tangente = normalize(tangente);
+  Points normal = normalize(crossProduct(k, tangente));
+
+  tangente = tangente + p;
+  normal = normal + p;
+  k = k + p;
+
+  //trace tangente
+  glBegin(GL_LINES);
+  glColor3f(1.0,0.0,0.0);
+  glVertex2f(p.x, p.y);
+  glVertex2f(tangente.x,tangente.y);
+  glEnd(); 
+
+  //trace normal
+  glBegin(GL_LINES);
+  glColor3f(1.0,1.0,0.0);
+  glVertex2f(p.x, p.y);
+  glVertex2f(normal.x,normal.y);
+  glEnd(); 
+  
+  //trace k
+  glBegin(GL_LINES);
+  glColor3f(0.0,1.0,1.0);
+  glVertex3f(p.x, p.y, p.z);
+  glVertex3f(k.x,k.y, k.z);
+  glEnd(); 
+}
+
 void displayCourbe(void)
 {
   glBegin(GL_LINE_STRIP);
-    for(float t = 0; t <= 1; t += 0.01){
-        glColor3f(1.0f, 1.0f, 0.0f);
-        Points pen;
-        pen = computeNurbs(t);
-        glVertex2f(pen.x, pen.y);
-    }       
-    glEnd();
+  for(float t = 0; t < 1; t += 0.01){
+      glColor3f(1.0f, 1.0f, 0.0f);
+      Points pen;
+      pen = computeNurbs(t);
+      glVertex2f(pen.x, pen.y);
+  }       
+  glEnd();
+
+  traceFrenet(0.5f);
 }
 
 int main(int argc,char **argv)
