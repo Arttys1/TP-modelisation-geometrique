@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <math.h>
 #include <sstream>
-
+#include <armadillo>
 
 #include<string>
 
@@ -41,34 +41,20 @@ float low_shininess = 5.0f;
 float high_shininess = 100.0f;
 float mat_emission[] = {0.3f, 0.2f, 0.2f, 0.0f};
 
-struct Points
-{
-    float x;
-    float y;
-    float z;
 
-    Points operator*(float f) const
-    {
-        return Points {.x = x * f, .y = y * f, .z = z * f};
-    }
-    Points operator+(Points p1) const
-    {
-        return Points {.x = p1.x + x, .y = p1.y + y, .z = p1.z + z};
-    }
-};
-
+//constante des courbes NUBS
 const int d = 3;
 const int n = 7;
 const int v_size = n + d + 1;
 const std::vector<GLfloat> nodal_vector { 0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1};
-const std::vector<Points> points {
-  {.x = 0, .y=1, .z = 0},
-  {.x = 1, .y=1, .z = 0},
-  {.x = 1, .y=2, .z = 0},
-  {.x = 2, .y=2, .z = 0},
-  {.x = 2.5, .y=1, .z = 0},
-  {.x = 1.7, .y=0, .z = 0},
-  {.x = 1, .y=0.7, .z = 0},
+const std::vector<arma::vec> points {
+  {0, 1, 0},
+  {1, 1, 0},
+  {1, 2, 0},
+  {2, 2, 0},
+  {2.5, 1, 0},
+  {1.7, 0, 0},
+  {1, 0.7, 0},
 };
 
 void initOpenGl() 
@@ -121,10 +107,10 @@ GLfloat cox_de_boor(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_
    + Nd1j1 * cox_de_boor(t, d-1, j + 1, nodal_vector);
 }
 
-Points computeNurbs(float t) {  
+arma::vec computeNubs(float t) {  
   assert(nodal_vector.size() == v_size);
 
-  Points sommePointCox = {0, 0};
+  arma::vec sommePointCox = {0, 0, 0};
   GLfloat sommeCox = 0.f;
   GLfloat wi = 1.f / n; // poids uniforme pour le moment
   for(int i = 0; i < n; i++) {
@@ -133,7 +119,7 @@ Points computeNurbs(float t) {
     sommeCox += Njd * wi;
   }
 
-  Points pointNurbs = sommePointCox * (1.f/sommeCox);
+  arma::vec pointNurbs = sommePointCox * (1.f/sommeCox);
   return pointNurbs;
 }
 
@@ -150,52 +136,37 @@ GLfloat derive_cox(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_v
        - f2 * cox_de_boor(t, d - 1, j + 1, nodal_vector);
 }
 
-Points computeDeriveNurbs(float t) {
+arma::vec computeDeriveNubs(float t) {
   assert(nodal_vector.size() == v_size);
 
-  Points sommePointCox = {0, 0};
-  Points sommePointCoxDerive = {0, 0};
+  arma::vec sommePointCox = {0, 0, 0};
+  arma::vec sommePointCoxDerive = {0, 0, 0};
   GLfloat sommeCox = 0.f;
   GLfloat sommeCoxDerive = 0.f;
 
   for(int i = 0; i < n ; i++) {
     GLfloat Njd = cox_de_boor(t, d, i, nodal_vector);
     GLfloat deriveNjd = derive_cox(t, d, i, nodal_vector);
-    sommePointCox = sommePointCox + (points[i] * Njd);
-    sommePointCoxDerive = sommePointCoxDerive + (points[i] * deriveNjd);
+    sommePointCox += (points[i] * Njd);
+    sommePointCoxDerive += (points[i] * deriveNjd);
     sommeCox += Njd;
     sommeCox += deriveNjd;
   }
 
-  GLfloat inverseSommeDiviseurCarre = 1.f / (sommeCox * sommeCox);
+  arma::vec a = (sommePointCoxDerive * sommeCox);
+  arma::vec b = (sommePointCox * sommeCoxDerive);
 
-  Points a = (sommePointCoxDerive * sommeCox) * inverseSommeDiviseurCarre;
-  Points b = (sommePointCox * sommeCoxDerive) * inverseSommeDiviseurCarre;
-
-  return a + (b * -1); // a- b
+  return (a - b) / (sommeCox * sommeCox); 
 }
 
 ////////////////////////
 
-Points normalize(Points a) {
-  float inverseDistance = 1 / sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-  return a * inverseDistance;
-}
-
-Points crossProduct(Points a, Points b) {
-  return Points {
-    .x = a.y * b.z - a.z * b.y,
-    .y = a.z * b.x - a.x * b.z,
-    .z = a.x * b.y - a.y * b.x,
-  };
-}
-
 void traceFrenet(float t) {
-  Points k = Points {0.0,0.0,1.0};
-  Points p = computeNurbs(t);
-  Points tangente = computeDeriveNurbs(t);
-  tangente = normalize(tangente);
-  Points normal = normalize(crossProduct(k, tangente));
+  arma::vec k = arma::vec {0.0,0.0,1.0};
+  arma::vec p = computeNubs(t);
+  arma::vec tangente = computeDeriveNubs(t);
+  tangente = arma::normalise(tangente);
+  arma::vec normal =  arma::normalise(arma::cross(k, tangente));
 
   tangente = tangente + p;
   normal = normal + p;
@@ -204,26 +175,26 @@ void traceFrenet(float t) {
   //trace tangente
   glBegin(GL_LINES);
   glColor3f(1.0,0.0,0.0);
-  glVertex2f(p.x, p.y);
-  glVertex2f(tangente.x,tangente.y);
+  glVertex2f(p[0], p[1]);
+  glVertex2f(tangente[0],tangente[1]);
   glEnd(); 
 
   //trace normal
   glBegin(GL_LINES);
   glColor3f(1.0,1.0,0.0);
-  glVertex2f(p.x, p.y);
-  glVertex2f(normal.x,normal.y);
+  glVertex2f(p[0], p[1]);
+  glVertex2f(normal[0],normal[1]);
   glEnd(); 
   
   //trace k
   glBegin(GL_LINES);
   glColor3f(0.0,1.0,1.0);
-  glVertex3f(p.x, p.y, p.z);
-  glVertex3f(k.x,k.y, k.z);
+  glVertex3f(p[0], p[1], p[2]);
+  glVertex3f(k[0],k[1], k[2]);
   glEnd(); 
 }
 
-//function to draw a circle, find here : https://stackoverflow.com/questions/22444450/drawing-circle-with-opengl
+//function to draw a circle, found here : https://stackoverflow.com/questions/22444450/drawing-circle-with-opengl
 void DrawCircle(float cx, float cy, float r)
 {
     const int num_segments = 64;
@@ -247,18 +218,18 @@ void displayCourbe(void)
   glBegin(GL_LINE_STRIP);
   for(float i = 0; i < 1; i += 0.01){
       glColor3f(1.0f, 1.0f, 0.0f);
-      Points pen;
-      pen = computeNurbs(i);
-      glVertex2f(pen.x, pen.y);
+      arma::vec pen;
+      pen = computeNubs(i);
+      glVertex2f(pen[0], pen[1]);
   }       
   glEnd();
 
   //display curve
-  for(float i = 0; i < 1; i += 0.001){
+  for(float i = 0; i < 1; i += 0.001){ 
       glColor3f(0.0f, i, 1.0f);
-      Points pen;
-      pen = computeNurbs(i);
-      DrawCircle(pen.x, pen.y, 0.1f);
+      arma::vec pen;
+      pen = computeNubs(i);
+      DrawCircle(pen[0], pen[1], 0.1f);
   }
 
   //display frenet
