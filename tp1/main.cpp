@@ -57,6 +57,8 @@ const std::vector<arma::vec> points {
   {1, 0.7, 0},
 };
 
+std::vector<arma::vec> cercle;
+
 void initOpenGl() 
 { 
 
@@ -195,18 +197,27 @@ void traceFrenet(float t) {
 }
 
 //function to draw a circle, found here : https://stackoverflow.com/questions/22444450/drawing-circle-with-opengl
-void DrawCircle(float cx, float cy, float r)
+void createCircle(float r) {
+  const int num_segments = 64;
+  for(int ii = 0; ii < num_segments; ii++)
+  {
+    float theta = 2.0f * 3.1415926f * float(ii) / float(num_segments);//get the current angle
+
+    float z = r * cosf(theta);//calculate the z component
+    float y = r * sinf(theta);//calculate the y component
+    arma::vec p{0.0f, y, z};
+    cercle.push_back(p);
+  }
+}
+
+void DrawCircle(float cx, float cy)
 {
-    const int num_segments = 64;
     glBegin(GL_LINE_LOOP);
-    for(int ii = 0; ii < num_segments; ii++)
+    for(int i = 0; i < cercle.size(); i++)
     {
-        float theta = 2.0f * 3.1415926f * float(ii) / float(num_segments);//get the current angle
-
-        float z = r * cosf(theta);//calculate the z component
-        float y = r * sinf(theta);//calculate the y component
-
-        glVertex3f(cx, y + cy, z);//output vertex
+        arma::vec v = cercle[i];
+        
+        glVertex3f(cx, v[1] + cy, v[2]);
 
     }
     glEnd();
@@ -229,7 +240,7 @@ void displayCourbe(void)
       glColor3f(0.0f, i, 1.0f);
       arma::vec pen;
       pen = computeNubs(i);
-      DrawCircle(pen[0], pen[1], 0.1f);
+      DrawCircle(pen[0], pen[1]);
   }
 
   //display frenet
@@ -263,6 +274,8 @@ int main(int argc,char **argv)
   //-------------------------------
     initOpenGl() ;
 //-------------------------------
+
+  createCircle(0.1);
 
 /* Entree dans la boucle principale glut */
   glutMainLoop();
