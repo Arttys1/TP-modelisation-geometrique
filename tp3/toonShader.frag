@@ -1,5 +1,5 @@
 /**
-* Fragment shader to draw PHONG.
+* Fragment shader to draw TOON.
 * Code found here : https://github.com/ms0g/glToonShader/blob/main/shaders/toon.frag.glsl
 */
 #version 410 core
@@ -25,9 +25,7 @@ void main() {
     float dotVN = dot(viewDir, normal);
 
     //draw outlines
-    float b = mix(0.5, 0.5, max(0.0, dot(normal, lightDir)));
-    if (dotVN < b)
-    {
+    if (dotVN < mix(0.5, 0.5, max(0.0, dot(normal, lightDir)))) {
         fragColor = vec4(0,0,0,0); 
         return;
     }
