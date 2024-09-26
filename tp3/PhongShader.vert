@@ -1,3 +1,7 @@
+/**
+* Vertex shader to draw PHONG.
+* Code found here : https://learnopengl.com/Lighting/Basic-Lighting
+*/
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
@@ -14,7 +18,6 @@ void main()
 {
     FragPos = vec3(MODEL * vec4(aPos, 1.0));
     Normal = mat3(transpose(inverse(MODEL))) * aNormal;
-    //Normal = aNormal;
 	gl_Position = MVP * vec4(aPos, 1.0f);
 	TexCoord = aTexCoord;
 }

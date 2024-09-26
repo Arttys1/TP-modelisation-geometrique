@@ -84,14 +84,14 @@ GLuint locLightAmbientCoefficient;
 
 // location des VBO
 //------------------
-GLuint indexVertex=0, indexUVTexture=1, indexNormale=2 ;
+GLuint indexVertex=0, indexUVTexture=2, indexNormale=1 ;
 
 //variable pour paramétrage eclairage
 //--------------------------------------
 vec3 cameraPosition(0.,0.,3.);
 // le matériau
 //---------------
-GLfloat materialShininess=3.;
+GLfloat materialShininess=2.;
 vec3 materialSpecularColor(1.,.1,1);  // couleur du materiau
 
 // la lumière
@@ -122,23 +122,22 @@ void createTorus(float R, float r )
 	phi = ((float)(radians(360.f)))/((float)NB_r);
 
 	float pasU, pasV;
-pasU= 1./NB_R;
-pasV= 1./NB_r;
-for (int i =0;i<=NB_R;i++ )
-for (int j =0;j<=NB_r;j++ )
- {
-float a,b,c;
-	sommets[(i*(NB_r+1)*3)+ (j*3)] =   (R+r*cos((float)j*phi)) * cos((float)i*theta)    ;//x
-	sommets[(i*(NB_r+1)*3)+ (j*3)+1] =  (R+r*cos((float)j*phi)) * sin((float)i*theta)  ;//y
-	sommets[(i*(NB_r+1)*3)+ (j*3)+2] =  r*sin((float)j*phi)  ;
-	
-	normales[(i*(NB_r+1)*3)+ (j*3)] =   cos((float)j*phi)*cos((float)i*theta)    ;//x
-	normales[(i*(NB_r+1)*3)+ (j*3)+1] = cos((float)j*phi)* sin((float)i*theta)  ;//y
-	normales[(i*(NB_r+1)*3)+ (j*3)+2] =  sin((float)j*phi)  ;
-		
-   coordTexture[(i*(NB_r+1)*2)+ (j*2)]= ((float)i)*pasV;
-   coordTexture[(i*(NB_r+1)*2)+ (j*2)+1]= ((float)j)*pasV;
-}
+  pasU= 1./NB_R;
+  pasV= 1./NB_r;
+  for (int i =0;i<=NB_R;i++ )
+    for (int j =0;j<=NB_r;j++ ) {
+      float a,b,c;
+      sommets[(i*(NB_r+1)*3)+ (j*3)] =   (R+r*cos((float)j*phi)) * cos((float)i*theta)    ;//x
+      sommets[(i*(NB_r+1)*3)+ (j*3)+1] =  (R+r*cos((float)j*phi)) * sin((float)i*theta)  ;//y
+      sommets[(i*(NB_r+1)*3)+ (j*3)+2] =  r*sin((float)j*phi)  ;
+      
+      normales[(i*(NB_r+1)*3)+ (j*3)] =   cos((float)j*phi)*cos((float)i*theta)    ;//x
+      normales[(i*(NB_r+1)*3)+ (j*3)+1] = cos((float)j*phi)* sin((float)i*theta)  ;//y
+      normales[(i*(NB_r+1)*3)+ (j*3)+2] =  sin((float)j*phi)  ;
+        
+      coordTexture[(i*(NB_r+1)*2)+ (j*2)]= ((float)i)*pasV;
+      coordTexture[(i*(NB_r+1)*2)+ (j*2)+1]= ((float)j)*pasV;
+    }
 
 int indiceMaxI =((NB_R+1)*(NB_r))-1;
 int indiceMaxJ= (NB_r+1);
@@ -230,8 +229,9 @@ void initOpenGL(void)
   glCullFace (GL_BACK); // on spécifie queil faut éliminer les face arriere
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST); 
-// le shader
-   programID = LoadShaders( "PhongShader.vert", "PhongShader.frag" );
+  // le shader
+  //programID = LoadShaders( "PhongShader.vert", "PhongShader.frag" );
+  programID = LoadShaders( "toonShader.vert", "toonShader.frag" );
  
  
    // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
@@ -375,7 +375,7 @@ void affichage()
 
   /* effacement de l'image avec la couleur de fond */
  /* Initialisation d'OpenGL */
-  glClearColor(0.0,0.0,0.0,0.0);
+  glClearColor(0.2,0.2,0.2,0.0);
   glClearDepth(10.0f);                         // 0 is near, >0 is far
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glColor3f(1.0,1.0,1.0);
