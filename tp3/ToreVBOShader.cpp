@@ -72,7 +72,7 @@ float cameraDistance=0;
 // variables Handle d'opengl 
 //--------------------------
 GLuint programID;   // handle pour le shader
-GLuint MatrixIDMVP,MatrixIDView,MatrixIDModel,MatrixIDPerspective;    // handle pour la matrice MVP
+GLuint MatrixIDMVP,MatrixIDView,MatrixIDModel,MatrixIDPerspective, iID, jID;    // handle pour la matrice MVP
 GLuint VBO_sommets,VBO_normales, VBO_indices,VBO_UVtext,VAO;
 GLuint locCameraPosition ;
 GLuint locmaterialShininess ;
@@ -91,7 +91,7 @@ GLuint indexVertex=0, indexUVTexture=2, indexNormale=1 ;
 vec3 cameraPosition(0.,0.,3.);
 // le matériau
 //---------------
-GLfloat materialShininess=2.;
+GLfloat materialShininess=32.;
 vec3 materialSpecularColor(1.,.1,1);  // couleur du materiau
 
 // la lumière
@@ -104,7 +104,7 @@ GLfloat LightAmbientCoefficient=.1;
 glm::mat4 MVP;      // justement la voilà
 glm::mat4 Model, View, Projection;    // Matrices constituant MVP
 
-
+float t = 0.0f;
 
 int screenHeight = 500;
 int screenWidth = 500;
@@ -207,20 +207,20 @@ GLubyte* glmReadPPM(char* filename, int* width, int* height)
 void initTexture(void)
 //-----------------------------------------
 {
- int iwidth  , iheight;
-   GLubyte *  image = NULL;
- 
-    image = glmReadPPM("./texture/Metalcolor.ppm", &iwidth, &iheight);
-	 glGenTextures(1, &bufTexture);	
-	 glBindTexture(GL_TEXTURE_2D, bufTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	 glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth,iheight, 0, GL_RGB,GL_UNSIGNED_BYTE,image);
-   
-    locationTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même  
- //   glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
+  int iwidth  , iheight;
+  GLubyte *  image = NULL;
+
+  image = glmReadPPM("./texture/MetalNRM.ppm", &iwidth, &iheight);
+  glGenTextures(1, &bufTexture);	
+  glBindTexture(GL_TEXTURE_2D, bufTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);	
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth,iheight, 0, GL_RGB,GL_UNSIGNED_BYTE,image);
+
+  locationTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même  
+  //glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
 }
 //----------------------------------------
 void initOpenGL(void)
@@ -232,7 +232,8 @@ void initOpenGL(void)
   // le shader
   //programID = LoadShaders( "PhongShader.vert", "PhongShader.frag" );
   //programID = LoadShaders( "toonShader.vert", "toonShader.frag" );
-  programID = LoadShaders( "GoochShader.vert", "GoochShader.frag" );
+  //programID = LoadShaders( "GoochShader.vert", "GoochShader.frag" );
+  programID = LoadShaders( "mandelbrot.vert", "mandelbrot.frag" );
  
  
    // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
@@ -240,6 +241,9 @@ void initOpenGL(void)
   MatrixIDView = glGetUniformLocation(programID, "VIEW");
   MatrixIDModel = glGetUniformLocation(programID, "MODEL");
   MatrixIDPerspective = glGetUniformLocation(programID, "PERSPECTIVE");
+  //julia set variable 
+  iID = glGetUniformLocation(programID, "i");
+  jID = glGetUniformLocation(programID, "j");
 
   // Projection matrix : 65 Field of View, 1:1 ratio, display range : 1 unit <-> 1000 units
   // ATTENTIOn l'angle est donné en radians si f GLM_FORCE_RADIANS est défini sinon en degré
@@ -426,6 +430,11 @@ void traceObjet()
  glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
  glUniform1f(locLightAttenuation,LightAttenuation);
  glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
+
+  t += 0.01;
+  glUniform1f(iID,2 * cos(t));
+  glUniform1f(jID,2 * sin(t));
+
 
 //pour l'affichage
 	glBindVertexArray(VAO); // on active le VAO
