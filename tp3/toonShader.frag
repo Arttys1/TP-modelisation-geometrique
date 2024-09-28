@@ -30,21 +30,17 @@ void main() {
         return;
     }
 
-    // Ambient
-    vec3 ambient = vec3(1.0);
-
     // Diffuse lighting
     float dp = max(0.0, dot(lightDir, normal));
 
     float fullShadow = smoothstep(0.5, 0.505, dp);
     float partialShadow = mix(0.5, 1.0, smoothstep(0.65, 0.655, dp));
-    dp = min(partialShadow, fullShadow);
-    vec3 diffuse = dp * lightColor;
+    vec3 diffuse = min(partialShadow, fullShadow) * lightColor;
 
     // Specular
     vec3 r = normalize(reflect(-lightDir, normal));
     float phongValue = max(0.0, dot(viewDir, r));
-    float specular = pow(phongValue, 128.0);
+    float specular = pow(phongValue, materialShininess);
 
     // Fresnel
     float fresnel = 1.0 - max(0.0, dotVN);
@@ -59,7 +55,4 @@ void main() {
     vec3 color = modelColor * lighting + specular;
     vec4 result = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);
     fragColor = result;
-
-
-
 }
