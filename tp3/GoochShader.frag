@@ -2,7 +2,7 @@
 * Fragment shader to draw Gooch.
 * Code found here : https://github.com/castano/qshaderedit/blob/master/data/shaders/gooch.glsl
 */
-#version 410 core
+#version 330 core
 
 in vec3 Normal;
 in vec3 FragPos;
