@@ -69,7 +69,7 @@ const std::vector<std::vector<arma::vec>> points {
   },
 };
 
-const float step = 0.001;
+const float step = 0.01;
 std::vector<std::vector<arma::vec>> nubs;
 
 
@@ -237,15 +237,30 @@ void precompute3DNubs() {
 void displayCourbe(void)
 {
   //display curve
-  glBegin(GL_POINTS);
   for(float i = 0; i < nubs.size(); i ++){
     for(float j = 0; j < nubs[i].size(); j++){
       glColor3f(i * step, j * step, 0.0f);
-      arma::vec p = nubs[i][j];
-      glVertex3f(p[0], p[1], p[2]);
+      if(i != nubs.size() - 1 && j != nubs[i].size() - 1) {
+        arma::vec p = nubs[i][j];
+        arma::vec p1 = nubs[i + 1][j];
+        arma::vec p2 = nubs[i][j + 1];
+        arma::vec p3 = nubs[i + 1][j + 1];
+
+        glBegin(GL_TRIANGLES);
+        glVertex3f(p[0], p[1], p[2]);
+        glVertex3f(p1[0], p1[1], p1[2]);
+        glVertex3f(p2[0], p2[1], p2[2]);
+        glEnd();
+
+        glBegin(GL_TRIANGLES);
+        glVertex3f(p1[0], p1[1], p1[2]);
+        glVertex3f(p3[0], p3[1], p3[2]);
+        glVertex3f(p2[0], p2[1], p2[2]);
+        glEnd();
+      }
+
     }
   }       
-  glEnd();
 
   //display frenet
   traceFrenet(tu, tv);
@@ -256,7 +271,7 @@ int main(int argc,char **argv)
   /* initialisation de glut et creation
      de la fenetre */
   glutInit(&argc,argv);
-  glutInitDisplayMode(GLUT_RGB);
+  glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH);
   glutInitWindowPosition(200,200);
   glutInitWindowSize(600,600);
   glutCreateWindow("ifs");
