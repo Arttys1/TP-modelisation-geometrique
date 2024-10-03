@@ -164,15 +164,16 @@ arma::vec computeDeriveNubs(float t) {
 ////////////////////////
 
 void traceFrenet(float t) {
-  arma::vec k = arma::vec {0.0,0.0,1.0};
+  //compute tangente and normal
+  arma::vec binormale = arma::vec {0.0,0.0,1.0};
   arma::vec p = computeNubs(t);
   arma::vec tangente = computeDeriveNubs(t);
   tangente = arma::normalise(tangente);
-  arma::vec normal =  arma::normalise(arma::cross(k, tangente));
+  arma::vec normal =  arma::normalise(arma::cross(binormale, tangente));
 
   tangente = tangente + p;
   normal = normal + p;
-  k = k + p;
+  binormale = binormale + p;
 
   //trace tangente
   glBegin(GL_LINES);
@@ -188,11 +189,11 @@ void traceFrenet(float t) {
   glVertex2f(normal[0],normal[1]);
   glEnd(); 
   
-  //trace k
+  //trace binormale
   glBegin(GL_LINES);
   glColor3f(0.0,1.0,1.0);
   glVertex3f(p[0], p[1], p[2]);
-  glVertex3f(k[0],k[1], k[2]);
+  glVertex3f(binormale[0],binormale[1], binormale[2]);
   glEnd(); 
 }
 
@@ -210,17 +211,24 @@ void createCircle(float r) {
   }
 }
 
-void DrawCircle(float cx, float cy)
+void DrawCircle(arma::vec pos, float t)
 {
-    glBegin(GL_LINE_LOOP);
-    for(int i = 0; i < cercle.size(); i++)
-    {
-        arma::vec v = cercle[i];
-        
-        glVertex3f(cx, v[1] + cy, v[2]);
+  //compute tangente and normal
+  arma::vec k = arma::vec {0.0,0.0,1.0};
+  arma::vec tangente = computeDeriveNubs(t);
+  tangente = arma::normalise(tangente);
+  arma::vec normal =  arma::normalise(arma::cross(k, tangente));
+  
+  glBegin(GL_LINE_LOOP);
+  for(int i = 0; i < cercle.size(); i++)
+  {
+      arma::vec v = cercle[i];
+      
+      arma::vec v1 = (v[0] * tangente + v[1] * k + v[2] * normal) + pos;
+      glVertex3f(v1[0], v1[1], v1[2]);
 
-    }
-    glEnd();
+  }
+  glEnd();
 }
 
 void displayCourbe(void)
@@ -235,12 +243,12 @@ void displayCourbe(void)
   }       
   glEnd();
 
-  //display curve
+  //display circles
   for(float i = 0; i < 1; i += 0.001){ 
       glColor3f(0.0f, i, 1.0f);
       arma::vec pen;
       pen = computeNubs(i);
-      DrawCircle(pen[0], pen[1]);
+      DrawCircle(pen, i);
   }
 
   //display frenet
