@@ -43,10 +43,11 @@ float mat_emission[] = {0.3f, 0.2f, 0.2f, 0.0f};
 
 
 //constante des courbes NUBS
-const int d = 3;
-const int n = 7;
+const int d = 3;  //degree de la courbe
+const int n = 7; //nb points de controles
 const int v_size = n + d + 1;
 const std::vector<GLfloat> nodal_vector { 0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1};
+//const std::vector<GLfloat> nodal_vector { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
 const std::vector<arma::vec> points {
   {0, 1, 0},
   {1, 1, 0},
