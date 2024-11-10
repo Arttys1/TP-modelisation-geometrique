@@ -376,14 +376,29 @@ void clavier(unsigned char touche,int x,int y)
         if (t < 0 ) t=0;
       glutPostRedisplay();
       break;
-      case 'v': //* ajustement du t
+    case 'v': //* ajustement du t
         tv+=.1;
-        tv = fmod(tv, 1.0f);
+        if(tv<0) tv=1.f;
+        if(tv>1) tv=0.f;
         glutPostRedisplay();
       break;
-      case 'u': //* ajustement du t
+    case 'u': //* ajustement du t
         tu+=.1;
-        tu = fmod(tu, 1.0f);
+        if(tu<0) tu=1.f;
+        if(tu>1) tu=0.f;
+        glutPostRedisplay();
+      glutPostRedisplay();
+      break;
+    case 'V': //* ajustement du t
+        tv-=.1;
+        if(tv<0) tv=1.f;
+        if(tv>1) tv=0.f;
+        glutPostRedisplay();
+      break;
+    case 'U': //* ajustement du t
+        tu-=.1;
+        if(tu<0) tu=1.f;
+        if(tu>1) tu=0.f;
         glutPostRedisplay();
       glutPostRedisplay();
       break;
