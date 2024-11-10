@@ -111,19 +111,14 @@ GLfloat cox_de_boor(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_
 }
 
 arma::vec computeNubs(float t) {  
-  assert(nodal_vector.size() == v_size);
 
-  arma::vec sommePointCox = {0, 0, 0};
-  GLfloat sommeCox = 0.f;
-  GLfloat wi = 1.f / n; // poids uniforme pour le moment
+  arma::vec nubs = {0, 0, 0};
   for(int i = 0; i < n; i++) {
     GLfloat Njd = cox_de_boor(t, d, i, nodal_vector);
-    sommePointCox = sommePointCox + (points[i] * Njd * wi);
-    sommeCox += Njd * wi;
+    nubs = nubs + (points[i] * Njd);
   }
 
-  arma::vec pointNurbs = sommePointCox * (1.f/sommeCox);
-  return pointNurbs;
+  return nubs;
 }
 
 GLfloat derive_cox(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_vector) {
@@ -142,7 +137,7 @@ GLfloat derive_cox(GLfloat t, int d, int  j, const std::vector<GLfloat> &nodal_v
 arma::vec computeDeriveNubs(float t) {
   assert(nodal_vector.size() == v_size);
 
-  arma::vec sommePointCox = {0, 0, 0};
+  arma::vec nubs = {0, 0, 0};
   arma::vec sommePointCoxDerive = {0, 0, 0};
   GLfloat sommeCox = 0.f;
   GLfloat sommeCoxDerive = 0.f;
@@ -150,16 +145,28 @@ arma::vec computeDeriveNubs(float t) {
   for(int i = 0; i < n ; i++) {
     GLfloat Njd = cox_de_boor(t, d, i, nodal_vector);
     GLfloat deriveNjd = derive_cox(t, d, i, nodal_vector);
-    sommePointCox += (points[i] * Njd);
+    nubs += (points[i] * Njd);
     sommePointCoxDerive += (points[i] * deriveNjd);
     sommeCox += Njd;
     sommeCox += deriveNjd;
   }
 
   arma::vec a = (sommePointCoxDerive * sommeCox);
-  arma::vec b = (sommePointCox * sommeCoxDerive);
+  arma::vec b = (nubs * sommeCoxDerive);
 
   return (a - b) / (sommeCox * sommeCox); 
+}
+
+arma::vec derive_seconde(float t) {
+  const float epsilon = 0.001;
+  return computeDeriveNubs(t + epsilon) - computeDeriveNubs(t) / epsilon;
+}
+
+float rayonCourbure(float t) {
+  arma::vec derive = computeDeriveNubs(t);
+  arma::vec seconde = derive_seconde(t);
+
+  return arma::norm(arma::cross(seconde, derive)) / pow(arma::norm(derive), 3);
 }
 
 ////////////////////////
@@ -254,6 +261,16 @@ void displayCourbe(void)
 
   //display frenet
   traceFrenet(t);
+
+  arma::vec pos = computeNubs(t);
+  arma::vec derive = computeDeriveNubs(t);
+  arma::vec seconde = derive_seconde(t);
+  std::cout << "--------------------------------------------------------" << std::endl;
+  std::cout << "Paramètre : t=" << t << std::endl;
+  std::cout << "Position : d=" << pos[0] << ", " << pos[1] << ", " << pos[2] << ", " << std::endl;
+  std::cout << "Derivée : d'=" << derive[0] << ", " << derive[1] << ", " << derive[2] << ", " << std::endl;
+  std::cout << "Derivée seconde : d''=" << seconde[0] << ", " << seconde[1] << ", " << seconde[2] << ", " << std::endl;
+  std::cout << "Rayon de courbure : R=" << rayonCourbure(t) << std::endl;
 }
 
 int main(int argc,char **argv)
@@ -348,12 +365,12 @@ void clavier(unsigned char touche,int x,int y)
   switch (touche)
     {
     case '+': //
-      t+=.1;
+      t+=.05;
        if (t > 1 ) t=1;
       glutPostRedisplay();
       break;
     case '-': //* ajustement du t
-       t-=.1;
+       t-=.05;
         if (t < 0 ) t=0;
       glutPostRedisplay();
       break;
