@@ -71,6 +71,7 @@ const std::vector<std::vector<arma::vec>> points {
 
 const float step = 0.01;
 std::vector<std::vector<arma::vec>> nubs;
+std::vector<std::vector<arma::vec>> nubs_color;
 
 
 void initOpenGl() 
@@ -224,12 +225,18 @@ void traceFrenet(float u, float v) {
 void precompute3DNubs() {
   int iter = 1.f / step;
   for(float i = 0; i < iter; i ++) {
-    float stepi = step * i;
+    float u = step * i;
     nubs.push_back(std::vector<arma::vec>());
+    nubs_color.push_back(std::vector<arma::vec>());
     for(float j = 0; j < iter; j++){
-      float stepj = step * j;
-      arma::vec p = compute3DNubs(stepi,stepj);
+      float v = step * j;
+      arma::vec p = compute3DNubs(u,v);
       nubs[i].push_back(p);
+      if((pow(u - 0.5, 2) + pow(v - 0.5, 2)) < pow(0.25, 2)) {
+        nubs_color[i].push_back(arma::vec {1.0, 0.0, 1.0});
+      } else {
+        nubs_color[i].push_back(arma::vec {i * step, j * step, 0.0f});
+      }  
     }
   }   
 }
@@ -239,7 +246,8 @@ void displayCourbe(void)
   //display curve
   for(float i = 0; i < nubs.size(); i ++){
     for(float j = 0; j < nubs[i].size(); j++){
-      glColor3f(i * step, j * step, 0.0f);
+      arma::vec color = nubs_color[i][j];
+      glColor3f(color[0], color[1], color[2]);
       if(i != nubs.size() - 1 && j != nubs[i].size() - 1) {
         arma::vec p = nubs[i][j];
         arma::vec p1 = nubs[i + 1][j];
