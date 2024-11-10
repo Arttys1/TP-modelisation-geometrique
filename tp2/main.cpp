@@ -164,7 +164,7 @@ std::array<arma::vec,2> computeDerive3DNubs(float u, float v) {
       float Nu = cox_de_boor(u, du, i, nodal_vectorU);
       float Nv =  cox_de_boor(v, dv, j, nodal_vectorV);
       float deriveNu = derive_cox(u, du, i, nu, nodal_vectorU);
-      float deriveNv = derive_cox(v, dv, i, nv, nodal_vectorV);
+      float deriveNv = derive_cox(v, dv, j, nv, nodal_vectorV);
 
       float NuNv = Nu * Nv;
       float dNuNv = deriveNu * Nv;
@@ -179,9 +179,9 @@ std::array<arma::vec,2> computeDerive3DNubs(float u, float v) {
   }
 
   float omega2 = omega * omega;
-  arma::vec du = (Ru*omega - R*omegau) / omega2;
-  arma::vec dv = (Rv*omega - R*omegav) / omega2;
-  return std::array{du,dv};
+  arma::vec derive_u = (Ru*omega - R*omegau) / omega2;
+  arma::vec derive_v = (Rv*omega - R*omegav) / omega2;
+  return std::array{derive_u, derive_v};
 }
 
 ////////////////////////
@@ -201,7 +201,7 @@ void traceFrenet(float u, float v) {
 
   //trace tangente
   glBegin(GL_LINES);
-  glColor3f(1.0,0.0,0.0);
+  glColor3f(1.0,0.0,1.0);
   glVertex3f(p[0], p[1], p[2]);
   glVertex3f(tangenteU[0],tangenteU[1],tangenteU[2]);
   glEnd(); 
